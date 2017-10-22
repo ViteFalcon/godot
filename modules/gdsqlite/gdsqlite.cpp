@@ -8,20 +8,25 @@ SQLite::SQLite() {
 }
 
 int SQLite::open(String path) {
-	if (path.begins_with("res://")) {
+    return open_v2(path, false);
+}
+
+int SQLite::open_v2(String path, bool read_only) {
+    if (path.begins_with("res://")) {
         if (ProjectSettings::get_singleton()) {
             String resource_path = ProjectSettings::get_singleton()->get_resource_path();
-			if (resource_path != "") path = path.replace("res:/",resource_path);
-			else path = path.replace("res://", "");
-		}
-	}
-	else if (path.begins_with("user://")) {
-		String data_dir=OS::get_singleton()->get_data_dir();
-		if (data_dir != "") path = path.replace("user:/",data_dir);
-		else path = path.replace("user://", "");
-	}
-	
-	return sqlite3_open(path.utf8().get_data(), &db);
+            if (resource_path != "") path = path.replace("res:/",resource_path);
+            else path = path.replace("res://", "");
+        }
+    }
+    else if (path.begins_with("user://")) {
+        String data_dir=OS::get_singleton()->get_data_dir();
+        if (data_dir != "") path = path.replace("user:/",data_dir);
+        else path = path.replace("user://", "");
+    }
+
+    int flags = read_only? SQLITE_OPEN_READONLY: SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+    return sqlite3_open_v2(path.utf8().get_data(), &db, flags, NULL);
 }
 
 void SQLite::prepare(String query) {
@@ -136,7 +141,8 @@ void SQLite::close() {
 }
 
 void SQLite::_bind_methods() {
-	ClassDB::bind_method("open", &SQLite::open);
+    ClassDB::bind_method("open", &SQLite::open);
+    ClassDB::bind_method("open_v2", &SQLite::open_v2);
 	ClassDB::bind_method("prepare", &SQLite::prepare);
 	ClassDB::bind_method("step", &SQLite::step);
 	ClassDB::bind_method("step_assoc", &SQLite::step_assoc);

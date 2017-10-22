@@ -18,6 +18,7 @@ public:
 	SQLite();
 	
 	int open(String path);
+    int open_v2(String path, bool read_only);
 	
 	void prepare(String query);
 	int step();
