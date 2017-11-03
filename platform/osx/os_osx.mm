@@ -1355,11 +1355,11 @@ MainLoop *OS_OSX::get_main_loop() const {
 
 String OS_OSX::get_system_dir(SystemDir p_dir) const {
 
-	NSSearchPathDirectory id = 0;
+    NSSearchPathDirectory id;
 
 	switch (p_dir) {
 		case SYSTEM_DIR_DESKTOP: {
-			id = NSDesktopDirectory;
+            id = NSDesktopDirectory;
 		} break;
 		case SYSTEM_DIR_DOCUMENTS: {
 			id = NSDocumentDirectory;
@@ -1376,6 +1376,9 @@ String OS_OSX::get_system_dir(SystemDir p_dir) const {
 		case SYSTEM_DIR_PICTURES: {
 			id = NSPicturesDirectory;
 		} break;
+        default: {
+            return String();
+        } break;
 	}
 
 	String ret;

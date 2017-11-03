@@ -65,7 +65,7 @@ Use UI font if exists, because it has tight vertial metrix and good for UI.
 - Version: 2.020
 - License: Hack Open Font License v2.0
 
-### DroidSans*.ttf
+### DroidSans\*.ttf
 
 - Upstream: ?
 

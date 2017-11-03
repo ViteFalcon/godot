@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+Import('env')
+
+env.Append(CXXFLAGS = '-std=c++11')
+
+env.Append(CPPPATH = [
+    "#modules/roklegend",
+    "#modules/roklegend/externals",
+    "#modules/roklegend/BroLib/grflib"
+])
+
+env.add_source_files(env.modules_sources, "**/*.cpp")
+env.add_source_files(env.modules_sources, "**/*.c")
+
+Export('env')

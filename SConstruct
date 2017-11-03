@@ -179,6 +179,7 @@ opts.Add(BoolVariable('builtin_recast', "Use the builtin recast library", True))
 opts.Add(BoolVariable('builtin_squish', "Use the builtin squish library", True))
 opts.Add(BoolVariable('builtin_zlib', "Use the builtin zlib library", True))
 opts.Add(BoolVariable('builtin_zstd', "Use the builtin zstd library", True))
+opts.Add(BoolVariable('builtin_BroLib', "Use the builtin BroLib library", True))
 
 # Environment setup
 opts.Add("CXX", "C++ compiler")
