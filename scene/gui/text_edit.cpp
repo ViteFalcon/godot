@@ -734,7 +734,7 @@ void TextEdit::_notification(int p_what) {
 
 				if (str.length() == 0) {
 					// draw line background if empty as we won't loop at at all
-					if (line == cursor.line) {
+					if (line == cursor.line && highlight_current_line) {
 						VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(0, ofs_y, xmargin_end, get_row_height()), cache.current_line_color);
 					}
 
@@ -965,7 +965,7 @@ void TextEdit::_notification(int p_what) {
 					//current line highlighting
 					bool in_selection = (selection.active && line >= selection.from_line && line <= selection.to_line && (line > selection.from_line || j >= selection.from_column) && (line < selection.to_line || j < selection.to_column));
 
-					if (line == cursor.line) {
+					if (line == cursor.line && highlight_current_line) {
 						// if its the first char draw behind line numbers
 						if (j == 0) {
 							VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(0, ofs_y, (char_ofs + char_margin), get_row_height()), cache.current_line_color);
@@ -2188,7 +2188,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 						}
 					}
 				}
-
+				begin_complex_operation();
 				bool first_line = false;
 				if (k->get_command()) {
 					if (k->get_shift()) {
@@ -2204,8 +2204,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					}
 				}
 
-				_insert_text_at_cursor(ins);
-				_push_current_op();
+				insert_text_at_cursor(ins);
 
 				if (first_line) {
 					cursor_set_line(0);
@@ -2213,7 +2212,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					cursor_set_line(cursor.line - 1);
 					cursor_set_column(text[cursor.line].length());
 				}
-
+				end_complex_operation();
 			} break;
 			case KEY_ESCAPE: {
 				if (completion_hint != "") {
@@ -4489,7 +4488,13 @@ void TextEdit::_update_completion_candidates() {
 	completion_index = 0;
 	completion_base = s;
 	Vector<float> sim_cache;
+	bool single_quote = s.begins_with("'");
+
 	for (int i = 0; i < completion_strings.size(); i++) {
+		if (single_quote && completion_strings[i].is_quoted()) {
+			completion_strings[i] = completion_strings[i].unquote().quote("'");
+		}
+
 		if (s == completion_strings[i]) {
 			// A perfect match, stop completion
 			_cancel_completion();
@@ -4732,6 +4737,15 @@ int TextEdit::get_breakpoint_gutter_width() const {
 	return cache.breakpoint_gutter_width;
 }
 
+void TextEdit::set_highlight_current_line(bool p_enabled) {
+	highlight_current_line = p_enabled;
+	update();
+}
+
+bool TextEdit::is_highlight_current_line_enabled() const {
+	return highlight_current_line;
+}
+
 bool TextEdit::is_text_field() const {
 
 	return true;
@@ -4859,6 +4873,9 @@ void TextEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_syntax_coloring", "enable"), &TextEdit::set_syntax_coloring);
 	ClassDB::bind_method(D_METHOD("is_syntax_coloring_enabled"), &TextEdit::is_syntax_coloring_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_highlight_current_line", "enabled"), &TextEdit::set_highlight_current_line);
+	ClassDB::bind_method(D_METHOD("is_highlight_current_line_enabled"), &TextEdit::is_highlight_current_line_enabled);
+
 	ClassDB::bind_method(D_METHOD("set_smooth_scroll_enable", "enable"), &TextEdit::set_smooth_scroll_enabled);
 	ClassDB::bind_method(D_METHOD("is_smooth_scroll_enabled"), &TextEdit::is_smooth_scroll_enabled);
 	ClassDB::bind_method(D_METHOD("set_v_scroll_speed", "speed"), &TextEdit::set_v_scroll_speed);
@@ -4870,6 +4887,7 @@ void TextEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("menu_option", "option"), &TextEdit::menu_option);
 	ClassDB::bind_method(D_METHOD("get_menu"), &TextEdit::get_menu);
 
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "highlight_current_line"), "set_highlight_current_line", "is_highlight_current_line_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "syntax_highlighting"), "set_syntax_coloring", "is_syntax_coloring_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_line_numbers"), "set_show_line_numbers", "is_show_line_numbers_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "highlight_all_occurrences"), "set_highlight_all_occurrences", "is_highlight_all_occurrences_enabled");
@@ -4991,6 +5009,7 @@ TextEdit::TextEdit() {
 	auto_brace_completion_enabled = false;
 	brace_matching_enabled = false;
 	highlight_all_occurrences = false;
+	highlight_current_line = false;
 	indent_using_spaces = false;
 	space_indent = "    ";
 	auto_indent = false;

@@ -80,6 +80,7 @@ layout(std140) uniform SceneData { //ubo:0
 	highp float shadow_dual_paraboloid_render_zfar;
 	highp float shadow_dual_paraboloid_render_side;
 
+	highp vec2 viewport_size;
 	highp vec2 screen_pixel_size;
 	highp vec2 shadow_atlas_pixel_size;
 	highp vec2 directional_shadow_pixel_size;
@@ -566,6 +567,7 @@ in vec3 normal_interp;
 uniform bool no_ambient_light;
 
 
+
 #ifdef USE_RADIANCE_MAP
 
 
@@ -663,6 +665,7 @@ layout(std140) uniform SceneData {
 	highp float shadow_dual_paraboloid_render_zfar;
 	highp float shadow_dual_paraboloid_render_side;
 
+	highp vec2 viewport_size;
 	highp vec2 screen_pixel_size;
 	highp vec2 shadow_atlas_pixel_size;
 	highp vec2 directional_shadow_pixel_size;
@@ -1065,7 +1068,7 @@ LIGHT_SHADER_CODE
 #elif defined(SPECULAR_DISABLED)
 		//none..
 
-#elif defined(SPECULAR_GGX)
+#elif defined(SPECULAR_SCHLICK_GGX)
 		// shlick+ggx as default
 
 		vec3 H = normalize(V + L);
@@ -1102,10 +1105,10 @@ LIGHT_SHADER_CODE
 
 #if defined(LIGHT_USE_CLEARCOAT)
 		if (clearcoat_gloss > 0.0) {
-# if !defined(SPECULAR_GGX) && !defined(SPECULAR_BLINN)
+# if !defined(SPECULAR_SCHLICK_GGX) && !defined(SPECULAR_BLINN)
 			vec3 H = normalize(V + L);
 # endif
-# if !defined(SPECULAR_GGX)
+# if !defined(SPECULAR_SCHLICK_GGX)
 			float cNdotH = max(dot(N,H), 0.0);
 			float cLdotH = max(dot(L,H), 0.0);
 			float cLdotH5 = SchlickFresnel(cLdotH);

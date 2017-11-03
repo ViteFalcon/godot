@@ -2476,6 +2476,11 @@ bool String::begins_with(const char *p_string) const {
 	return *p_string == 0;
 }
 
+bool String::is_enclosed_in(const String &p_string) const {
+
+	return begins_with(p_string) && ends_with(p_string);
+}
+
 bool String::is_subsequence_of(const String &p_string) const {
 
 	return _base_is_subsequence_of(p_string, false);
@@ -2484,6 +2489,11 @@ bool String::is_subsequence_of(const String &p_string) const {
 bool String::is_subsequence_ofi(const String &p_string) const {
 
 	return _base_is_subsequence_of(p_string, true);
+}
+
+bool String::is_quoted() const {
+
+	return is_enclosed_in("\"") || is_enclosed_in("'");
 }
 
 bool String::_base_is_subsequence_of(const String &p_string, bool case_insensitive) const {
@@ -2745,6 +2755,48 @@ CharType String::ord_at(int p_idx) const {
 
 	ERR_FAIL_INDEX_V(p_idx, length(), 0);
 	return operator[](p_idx);
+}
+
+String String::dedent() const {
+
+	String new_string;
+	String indent;
+	bool has_indent = false;
+	bool has_text = false;
+	int line_start = 0;
+	int indent_stop = -1;
+
+	for (int i = 0; i < length(); i++) {
+
+		CharType c = operator[](i);
+		if (c == '\n') {
+			if (has_text)
+				new_string += substr(indent_stop, i - indent_stop);
+			new_string += "\n";
+			has_text = false;
+			line_start = i + 1;
+			indent_stop = -1;
+		} else if (!has_text) {
+			if (c > 32) {
+				has_text = true;
+				if (!has_indent) {
+					has_indent = true;
+					indent = substr(line_start, i - line_start);
+					indent_stop = i;
+				}
+			}
+			if (has_indent && indent_stop < 0) {
+				int j = i - line_start;
+				if (j >= indent.length() || c != indent[j])
+					indent_stop = i;
+			}
+		}
+	}
+
+	if (has_text)
+		new_string += substr(indent_stop, length() - indent_stop);
+
+	return new_string;
 }
 
 String String::strip_edges(bool left, bool right) const {
@@ -3904,6 +3956,18 @@ String String::sprintf(const Array &values, bool *error) const {
 
 	*error = false;
 	return formatted;
+}
+
+String String::quote(String quotechar) const {
+	return quotechar + *this + quotechar;
+}
+
+String String::unquote() const {
+	if (!is_quoted()) {
+		return *this;
+	}
+
+	return substr(1, length() - 2);
 }
 
 #include "translation.h"

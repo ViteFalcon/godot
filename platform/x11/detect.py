@@ -52,7 +52,6 @@ def get_opts():
         BoolVariable('use_static_cpp', 'Link stdc++ statically', False),
         BoolVariable('use_sanitizer', 'Use LLVM compiler address sanitizer', False),
         BoolVariable('use_leak_sanitizer', 'Use LLVM compiler memory leaks sanitizer (implies use_sanitizer)', False),
-        BoolVariable('use_lto', 'Use link time optimization', False),
         BoolVariable('pulseaudio', 'Detect & use pulseaudio', True),
         BoolVariable('udev', 'Use udev for gamepad connection callbacks', False),
         EnumVariable('debug_symbols', 'Add debug symbols to release version', 'yes', ('yes', 'no', 'full')),
@@ -100,6 +99,10 @@ def configure(env):
         env["bits"] = "64" if is64 else "32"
 
     ## Compiler configuration
+
+    if 'CXX' in env and 'clang' in env['CXX']:
+        # Convenience check to enforce the use_llvm overrides when CXX is clang(++)
+        env['use_llvm'] = True
 
     if env['use_llvm']:
         if ('clang++' not in env['CXX']):

@@ -29,6 +29,7 @@
 /*************************************************************************/
 #include "gd_mono.h"
 
+#include <mono/metadata/exception.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-gc.h>
@@ -46,6 +47,15 @@
 #ifdef TOOLS_ENABLED
 #include "../editor/godotsharp_editor.h"
 #endif
+
+void gdmono_unhandled_exception_hook(MonoObject *exc, void *user_data) {
+
+	(void)user_data; // UNUSED
+
+	ERR_PRINT(GDMonoUtils::get_exception_name_and_message(exc).utf8());
+	mono_print_unhandled_exception(exc);
+	abort();
+}
 
 #ifdef MONO_PRINT_HANDLER_ENABLED
 void gdmono_MonoPrintCallback(const char *string, mono_bool is_stdout) {
@@ -214,6 +224,8 @@ void GDMono::initialize() {
 	// The following assemblies are not required at initialization
 	_load_all_script_assemblies();
 
+	mono_install_unhandled_exception_hook(gdmono_unhandled_exception_hook, NULL);
+
 	OS::get_singleton()->print("Mono: ALL IS GOOD\n");
 }
 
@@ -357,9 +369,12 @@ bool GDMono::_load_project_assembly() {
 	if (project_assembly)
 		return true;
 
-	String project_assembly_name = ProjectSettings::get_singleton()->get("application/config/name");
+	String name = ProjectSettings::get_singleton()->get("application/config/name");
+	if (name.empty()) {
+		name = "UnnamedProject";
+	}
 
-	bool success = _load_assembly(project_assembly_name, &project_assembly);
+	bool success = _load_assembly(name, &project_assembly);
 
 	if (success)
 		mono_assembly_set_main(project_assembly->get_assembly());
@@ -610,6 +625,8 @@ GDMono::~GDMono() {
 
 	if (gdmono_log)
 		memdelete(gdmono_log);
+
+	singleton = NULL;
 }
 
 _GodotSharp *_GodotSharp::singleton = NULL;
@@ -688,7 +705,7 @@ bool _GodotSharp::is_domain_loaded() {
 
 void _GodotSharp::queue_dispose(Object *p_object) {
 
-	if (Thread::get_main_id() == Thread::get_caller_id() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
 		_dispose_object(p_object);
 	} else {
 #ifndef NO_THREADS
@@ -705,7 +722,7 @@ void _GodotSharp::queue_dispose(Object *p_object) {
 
 void _GodotSharp::queue_dispose(NodePath *p_node_path) {
 
-	if (Thread::get_main_id() == Thread::get_caller_id() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
 		memdelete(p_node_path);
 	} else {
 #ifndef NO_THREADS
@@ -722,7 +739,7 @@ void _GodotSharp::queue_dispose(NodePath *p_node_path) {
 
 void _GodotSharp::queue_dispose(RID *p_rid) {
 
-	if (Thread::get_main_id() == Thread::get_caller_id() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
 		memdelete(p_rid);
 	} else {
 #ifndef NO_THREADS

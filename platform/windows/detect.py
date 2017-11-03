@@ -64,7 +64,6 @@ def get_opts():
     return [
         ('mingw_prefix_32', 'MinGW prefix (Win32)', mingw32),
         ('mingw_prefix_64', 'MinGW prefix (Win64)', mingw64),
-        BoolVariable('use_lto', 'Use link time optimization (when using MingW)', False),
         EnumVariable('debug_symbols', 'Add debug symbols to release version', 'yes', ('yes', 'no', 'full')),
     ]
 
@@ -264,10 +263,7 @@ def configure(env):
 
         if env['use_lto']:
             env.Append(CCFLAGS=['-flto'])
-            if not env['use_llvm'] and env.GetOption("num_jobs") > 1:
-                env.Append(LINKFLAGS=['-flto=' + str(env.GetOption("num_jobs"))])
-            else:
-                env.Append(LINKFLAGS=['-flto'])
+            env.Append(LINKFLAGS=['-flto=' + str(env.GetOption("num_jobs"))])
 
         ## Compile flags
 

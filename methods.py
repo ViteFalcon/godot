@@ -1149,7 +1149,10 @@ def build_gles3_headers(target, source, env):
         build_legacygl_header(str(x), include="drivers/gles3/shader_gles3.h", class_suffix="GLES3", output_attribs=True)
 
 
-def update_version():
+def add_module_version_string(self,s):
+    self.module_version_string+="."+s
+
+def update_version(module_version_string=""):
 
     rev = "custom_build"
 
@@ -1167,6 +1170,7 @@ def update_version():
         f.write("#define VERSION_PATCH " + str(version.patch) + "\n")
     f.write("#define VERSION_REVISION " + str(rev) + "\n")
     f.write("#define VERSION_STATUS " + str(version.status) + "\n")
+    f.write("#define VERSION_MODULE_CONFIG \"" + str(version.module_config) + module_version_string + "\"\n")
     import datetime
     f.write("#define VERSION_YEAR " + str(datetime.datetime.now().year) + "\n")
     f.close()
@@ -1710,9 +1714,13 @@ def generate_vs_project(env, num_jobs):
         env.AddToVSProject(env.servers_sources)
         env.AddToVSProject(env.editor_sources)
 
-        env['MSVSBUILDCOM'] = build_commandline('scons --directory=$(ProjectDir) platform=windows target=$(Configuration) tools=!tools! -j' + str(num_jobs))
-        env['MSVSREBUILDCOM'] = build_commandline('scons --directory=$(ProjectDir) platform=windows target=$(Configuration) tools=!tools! vsproj=yes -j' + str(num_jobs))
-        env['MSVSCLEANCOM'] = build_commandline('scons --directory=$(ProjectDir) --clean platform=windows target=$(Configuration) tools=!tools! -j' + str(num_jobs))
+        # windows allows us to have spaces in paths, so we need
+        # to double quote off the directory. However, the path ends
+        # in a backslash, so we need to remove this, lest it escape the
+        # last double quote off, confusing MSBuild
+        env['MSVSBUILDCOM'] = build_commandline('scons --directory="$(ProjectDir.TrimEnd(\'\\\'))" platform=windows target=$(Configuration) tools=!tools! -j' + str(num_jobs))
+        env['MSVSREBUILDCOM'] = build_commandline('scons --directory="$(ProjectDir.TrimEnd(\'\\\'))" platform=windows target=$(Configuration) tools=!tools! vsproj=yes -j' + str(num_jobs))
+        env['MSVSCLEANCOM'] = build_commandline('scons --directory="$(ProjectDir.TrimEnd(\'\\\'))" --clean platform=windows target=$(Configuration) tools=!tools! -j' + str(num_jobs))
 
         # This version information (Win32, x64, Debug, Release, Release_Debug seems to be
         # required for Visual Studio to understand that it needs to generate an NMAKE
